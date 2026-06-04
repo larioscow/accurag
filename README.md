@@ -23,13 +23,14 @@ corpus](#ingesting-a-corpus)).
 
 ```bash
 git clone <this repo> && cd accurag
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install -e ".[ingest]"          # parsers (Docling + PyMuPDF) live behind this extra
+uv sync --extra ingest              # creates .venv and installs deps + parsers (Docling + PyMuPDF)
+source .venv/bin/activate           # or prefix the commands below with `uv run`
 cp .env.example .env                # add your keys (see Configuration)
 ```
 
-Requires Python 3.12. Qdrant runs embedded in-process, so there is no separate service to
-start, and everything runs on CPU.
+uv fetches Python 3.12 if you don't have it. Qdrant runs embedded in-process, so there is
+no separate service to start, and everything runs on CPU. (Plain pip works too:
+`pip install -e ".[ingest]"`.)
 
 ## Quick start
 
@@ -47,7 +48,8 @@ for s in ans.sources:                                  # typed RetrievedChunk pr
     print(s.chunk.source_title, s.chunk.url, s.score)
 ```
 
-From the CLI (`pip install -e` installs the `accurag` command):
+From the CLI (`uv sync` installs the `accurag` command; run it inside the activated `.venv`,
+or prefix with `uv run`):
 
 ```bash
 accurag ingest --parser docling
@@ -214,8 +216,8 @@ cheap. The eval uses a dependency-free LLM judge, so there is no LangChain in th
 ## Development
 
 ```bash
-pip install -e ".[dev]"
-python -m pytest -q          # 140 tests, no API keys or network required (fakes + in-memory Qdrant)
+uv sync --extra dev
+uv run pytest -q             # 140 tests, no API keys or network required (fakes + in-memory Qdrant)
 ```
 
 ruff and mypy pass clean, and CI runs them. The pipeline is built from small,
