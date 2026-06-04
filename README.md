@@ -22,15 +22,13 @@ corpus](#ingesting-a-corpus)).
 ## Install
 
 ```bash
-git clone <this repo> && cd accurag
-uv sync --extra ingest              # creates .venv and installs deps + parsers (Docling + PyMuPDF)
-source .venv/bin/activate           # or prefix the commands below with `uv run`
-cp .env.example .env                # add your keys (see Configuration)
+git clone https://github.com/larioscow/accurag.git && cd accurag
+uv sync --extra ingest
+source .venv/bin/activate
+cp .env.example .env
 ```
 
-uv fetches Python 3.12 if you don't have it. Qdrant runs embedded in-process, so there is
-no separate service to start, and everything runs on CPU. (Plain pip works too:
-`pip install -e ".[ingest]"`.)
+The `ingest` extra pulls in the parsers (Docling, PyMuPDF). Add your API keys to `.env`.
 
 ## Quick start
 
@@ -48,8 +46,7 @@ for s in ans.sources:                                  # typed RetrievedChunk pr
     print(s.chunk.source_title, s.chunk.url, s.score)
 ```
 
-From the CLI (`uv sync` installs the `accurag` command; run it inside the activated `.venv`,
-or prefix with `uv run`):
+From the CLI:
 
 ```bash
 accurag ingest --parser docling
