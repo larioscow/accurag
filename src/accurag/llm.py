@@ -1,14 +1,14 @@
 """LLM providers for grounded answer generation.
 
-Two providers, both returning plain answer **text** — no tool-use, no structured
-citation schema. Sources are tracked deterministically in Python (the retrieved
+Two providers, both returning plain answer text. Neither uses tool-use or a
+structured citation schema. Sources are tracked in Python (the retrieved
 chunks), so the model's only job is to write a grounded answer from the context.
 
-- :class:`AnthropicLLM` — primary (Claude).
-- :class:`OpenAILLM` — fallback (GPT-*).
+- :class:`AnthropicLLM`: primary (Claude).
+- :class:`OpenAILLM`: fallback (GPT-*).
 
-Both SDKs are imported lazily inside methods so this module imports — and the
-classes instantiate — without API keys or network. The SDK client is injectable
+Both SDKs are imported lazily inside methods so this module imports, and the
+classes instantiate, without API keys or network. The SDK client is injectable
 for hermetic testing.
 
 Usage::
@@ -27,7 +27,7 @@ class EmptyCompletionError(RuntimeError):
     """Raised when a provider returns no answer text (refusal / length truncation).
 
     Subclasses ``RuntimeError`` for backwards compatibility. This is the contract
-    every ``.answer()`` upholds: it returns non-empty text or raises — it never
+    every ``.answer()`` upholds: it returns non-empty text or raises, and never
     returns ``""``. Callers that batch many calls (e.g. ``RagPipeline.evaluate``)
     catch this specifically so one empty completion doesn't abort the run, while
     a real network/API error still propagates.
@@ -39,7 +39,7 @@ def _require_nonempty(text: str, *, provider: str, model: str, reason: str) -> s
     if text:
         return text
     raise EmptyCompletionError(
-        f"{provider} returned no answer text (model={model}, {reason}) — likely a "
+        f"{provider} returned no answer text (model={model}, {reason}), likely a "
         "refusal or length truncation, not a real empty answer."
     )
 

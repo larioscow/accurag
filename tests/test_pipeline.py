@@ -1,4 +1,4 @@
-"""Tests for accurag.pipeline.RagPipeline — fully hermetic.
+"""Tests for accurag.pipeline.RagPipeline: fully hermetic.
 
 All collaborators (embed client, sparse model, llm, Qdrant) are FAKE or
 in-memory, so these tests run with NO API keys and NO network.
@@ -196,8 +196,8 @@ def test_ask_returns_answer_with_deterministic_sources():
     ans = pipe.ask("text for 1-0", strategy="dense", k=2)
     assert isinstance(ans, Answer)
     assert ans.text
-    # sources are exactly the retrieved chunks (deterministic, typed) — not the
-    # LLM's self-report. The first retrieved is the queried chunk.
+    # sources are exactly the retrieved chunks (typed), taken from retrieval
+    # rather than the LLM's self-report. The first retrieved is the queried chunk.
     assert ans.sources
     assert ans.sources[0].chunk.chunk_id == "1-0"
     assert all(isinstance(s.chunk.chunk_id, str) for s in ans.sources)
@@ -297,8 +297,8 @@ def test_evaluate_answer_quality_populates_columns():
 
 
 def test_hybrid_rerank_overfetches_candidate_pool(monkeypatch):
-    """hybrid_rerank must request a deep candidate pool (settings.rerank_candidates),
-    not the shallow k — the reranker needs depth to work (paper [16-27])."""
+    """hybrid_rerank must request a deep candidate pool (settings.rerank_candidates)
+    rather than the shallow k. The reranker needs depth to work (paper [16-27])."""
     import accurag.retrieve as rmod
     from accurag.config import settings
 
@@ -312,7 +312,9 @@ def test_hybrid_rerank_overfetches_candidate_pool(monkeypatch):
     monkeypatch.setattr(rmod, "hybrid", spy)
     pipe = _pipeline()
     pipe.retrieve("text for 1-0", strategy="hybrid_rerank", k=5)
-    assert captured["k"] >= settings.rerank_candidates  # over-fetches the configured pool, not k
+    assert (
+        captured["k"] >= settings.rerank_candidates
+    )  # over-fetches the configured pool rather than k
 
     # explicit override is honoured
     pipe.retrieve("text for 1-0", strategy="hybrid_rerank", k=5, rerank_candidates=80)
@@ -320,7 +322,7 @@ def test_hybrid_rerank_overfetches_candidate_pool(monkeypatch):
 
 
 def test_pipelines_are_instance_configured_and_isolated():
-    """Two pipelines, two collections, one client — no global mutation, no leakage."""
+    """Two pipelines, two collections, one client, with no global mutation or leakage."""
     from qdrant_client import QdrantClient
     from qdrant_client import models as qm
 
@@ -380,9 +382,9 @@ def test_embed_model_override_is_used():
 
 
 def test_per_instance_api_keys_thread_to_clients():
-    """Keys passed via config=Settings(...) reach the lazily-built clients —
-    not silently overridden by the module global (regression for the leaky
-    'no globals' abstraction)."""
+    """Keys passed via config=Settings(...) reach the lazily-built clients
+    and are not silently overridden by the module global (regression for the
+    leaky 'no globals' abstraction)."""
     from accurag import Settings
     from accurag.config import settings as global_settings
 

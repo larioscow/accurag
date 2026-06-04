@@ -1,4 +1,4 @@
-"""Tests for accurag.rerank — all hermetic, no API keys, no network."""
+"""Tests for accurag.rerank. All hermetic, without API keys or network."""
 
 from accurag.models import Chunk, RetrievedChunk
 
@@ -38,7 +38,7 @@ class _FakeRerankResponse:
 
 
 class _FakeV2:
-    """Mimics the `co.v2` namespace — reverses the document order."""
+    """Mimics the `co.v2` namespace, reversing the document order."""
 
     def rerank(
         self,

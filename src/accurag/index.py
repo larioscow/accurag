@@ -6,7 +6,7 @@ Design notes
   QdrantClient(":memory:") to stay hermetic.
 * Named vectors: "dense" (dense float vectors) and optionally "sparse"
   (BM25/BM42 SparseVector). This mirrors the hybrid-retrieval plan.
-* Qdrant client 1.18 uses create_collection / collection_exists — the old
+* Qdrant client 1.18 uses create_collection / collection_exists; the old
   recreate_collection is gone.
 * Point IDs: Qdrant requires integer or UUID point IDs. We derive a stable
   unsigned 64-bit integer from the chunk_id string via SHA-256 so that
@@ -32,8 +32,8 @@ from accurag.models import Chunk
 def dense_dim_of(client: QdrantClient, col: str) -> int:
     """Return the size of a collection's ``"dense"`` named vector.
 
-    Single source of truth for "what dim is this collection?" — used by both the
-    reuse guard in :func:`build_collection` and the query-time check in
+    The one place that answers "what dim is this collection?". It is used by
+    both the reuse guard in :func:`build_collection` and the query-time check in
     :func:`accurag.retrieve._assert_dense_dim`, so the two never drift. Handles
     both the named-vector dict shape and a bare (unnamed) VectorParams.
     """
@@ -42,12 +42,12 @@ def dense_dim_of(client: QdrantClient, col: str) -> int:
         if "dense" not in vectors:
             raise ValueError(
                 f"Collection '{col}' has named vectors {sorted(vectors)} but no "
-                "'dense' vector — it was not built by accurag."
+                "'dense' vector. It was not built by accurag."
             )
         return vectors["dense"].size
     if vectors is None:
         raise ValueError(
-            f"Collection '{col}' has no dense vector configuration — it was not built by accurag."
+            f"Collection '{col}' has no dense vector configuration. It was not built by accurag."
         )
     return vectors.size
 
@@ -116,9 +116,10 @@ def build_collection(
     vector_size = dim if dim is not None else settings.embed_dim
 
     if client.collection_exists(col):
-        # Idempotent — but guard against silently reusing a collection that does
-        # not match what this embedder/strategy needs, which would otherwise fail
-        # cryptically deep in Qdrant on the first upsert/query. Two axes:
+        # Idempotent, but guard against silently reusing a collection that does
+        # not match what this embedder/strategy needs. Without the guard it would
+        # fail deep in Qdrant on the first upsert/query, with an opaque message.
+        # Two axes:
         #   1. dense dim (e.g. 3072-dim large vs 1536-dim small), and
         #   2. the sparse slot (a dense-only collection reused for hybrid has no
         #      "sparse" vector -> "vector named sparse does not exist").

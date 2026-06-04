@@ -1,12 +1,12 @@
 """Prompt construction for the grounded RAG answer step.
 
-Design notes:
-- Pure Python — no external SDK imports, no API keys required.
+Notes:
+- Pure Python, with no external SDK imports and no API keys required.
 - ``build_grounded_prompt`` formats a numbered context window and instructs the
   model to answer ONLY from the context and say "I don't know" otherwise. It
-  asks for **clean prose with no citation markers** — provenance is attached
-  deterministically from the retrieved set (``Answer.sources``), so the answer
-  text stays parse-free for the consumer.
+  asks for clean prose with no citation markers. Provenance comes from the
+  retrieved set (``Answer.sources``), so the answer text stays parse-free for
+  the consumer.
 - PROMPT_VERSION is bumped whenever the template changes so eval runs
   can be linked back to the exact prompt that produced them.
 """
@@ -25,7 +25,7 @@ You are a precise, grounded assistant. You must follow these rules:
 3. Do NOT use any prior knowledge or make assumptions beyond what the context
    explicitly states.
 4. Write the answer as clean prose. Do NOT add citation markers, chunk ids, or
-   bracketed references — the sources are tracked separately.
+   bracketed references. The sources are tracked separately.
 """
 
 _CONTEXT_BLOCK_TEMPLATE = """\
@@ -45,8 +45,8 @@ def build_grounded_prompt(query: str, retrieved: list[RetrievedChunk]) -> str:
     the model to:
       - answer ONLY from the provided context,
       - respond "I don't know" when the answer is absent,
-      - write clean prose with no citation markers (provenance is attached
-        deterministically from the retrieved set).
+      - write clean prose with no citation markers (provenance comes from the
+        retrieved set).
 
     Args:
         query:     The user's question.

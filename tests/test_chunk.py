@@ -1,4 +1,4 @@
-"""Tests for chunk.py — hermetic, no Docling run, no API keys."""
+"""Tests for chunk.py. Hermetic; does not run Docling or require API keys."""
 
 from types import SimpleNamespace
 
@@ -73,7 +73,7 @@ def test_to_chunk_no_arxiv_id_field():
 
 
 def test_chunk_document_is_callable():
-    """chunk_document must exist and be callable — import-only check, no Docling run."""
+    """chunk_document must exist and be callable. Import-only check that does not run Docling."""
     from accurag.chunk import chunk_document
 
     assert callable(chunk_document)

@@ -1,6 +1,6 @@
-"""Tests for accurag.retrieve — dense and hybrid retrieval.
+"""Tests for accurag.retrieve: dense and hybrid retrieval.
 
-All tests use QdrantClient(":memory:") so no network, no disk, no API keys needed.
+All tests use QdrantClient(":memory:"), so they need no network, disk, or API keys.
 """
 
 from __future__ import annotations
@@ -150,7 +150,7 @@ def test_dense_score_is_float():
 
 
 # ---------------------------------------------------------------------------
-# Tests for hybrid() — bonus: server-side RRF in :memory:
+# Tests for hybrid(): server-side RRF in :memory:
 # ---------------------------------------------------------------------------
 
 
@@ -202,7 +202,7 @@ def test_hybrid_top_result_has_chunk_id():
 
 
 # ---------------------------------------------------------------------------
-# Embedder/index dimension contract — a mismatched embedder must fail loudly
+# Embedder/index dimension contract. A mismatched embedder must fail loudly.
 # ---------------------------------------------------------------------------
 
 

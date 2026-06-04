@@ -1,13 +1,13 @@
-"""RagPipeline — the facade that wires every accurag module into one object.
+"""RagPipeline, the facade that wires every accurag module into one object.
 
 The pipeline composes the corpus-agnostic building blocks (fetch, parse, chunk,
 embed, sparse_embed, index, retrieve, rerank, answer, evaluate) behind four
 methods: :meth:`ingest`, :meth:`retrieve`, :meth:`ask`, :meth:`evaluate`.
 
 Design rules (mirrors the rest of the library):
-- Every heavy / key-requiring collaborator is *injectable* via the constructor
-  and only built lazily on first real use, so importing this module — and
-  constructing a pipeline with fakes — needs no API keys and no network.
+- Every heavy or key-requiring collaborator is injectable via the constructor
+  and only built lazily on first real use, so importing this module (and
+  constructing a pipeline with fakes) needs no API keys and no network.
 - The default LLM is :class:`~accurag.llm.AnthropicLLM` (Claude); swap in
   :class:`~accurag.llm.OpenAILLM` for the documented OpenAI fallback.
 - The expensive ingestion stages (parse + chunk + embed) are cached to
@@ -41,7 +41,7 @@ _STRATEGIES = ("dense", "hybrid", "hybrid_rerank")
 class RagPipeline:
     """End-to-end RAG pipeline over a fixed corpus + Qdrant index.
 
-    Configuration is per-instance — no global state. ``RagPipeline()`` uses the
+    Configuration is per-instance, with no global state. ``RagPipeline()`` uses the
     package defaults; pass ``collection=`` / ``embed_model=`` (or a full
     ``config=Settings(...)``) to run multiple independent pipelines in one process
     without touching any global:
@@ -63,9 +63,9 @@ class RagPipeline:
         collection:     convenience override for the corpus/index name (cfg.collection).
         embed_model:    convenience override for the dense embedder (cfg.embed_model).
 
-    Note on keys: ``config``'s API keys are applied only to the *default*,
-    lazily-built clients. If you inject your own ``embed_client`` / ``llm`` /
-    ``reranker``, that client owns its own credentials — the matching
+    Note on keys: ``config``'s API keys are applied only to the default,
+    lazily-built clients. If you inject your own ``embed_client``, ``llm``, or
+    ``reranker``, that client owns its own credentials; the matching
     ``config`` key is not applied to it (you already configured it).
     """
 
@@ -181,8 +181,9 @@ class RagPipeline:
         paths = fetch.fetch_all(entries, self.cfg.raw_dir)
 
         # Chunk-size budget = min(target, embedder ceiling). The embedder window
-        # is a hard ceiling (exceed it -> silent truncation); the target is the
-        # quality knob. min() keeps chunks within whatever embedder we're using.
+        # is a hard ceiling (exceed it and the text is silently truncated); the
+        # target is the quality knob. min() keeps chunks within whatever embedder
+        # we're using.
         target = chunk_size or self.cfg.chunk_size
         ceiling = embed.embedder_max_tokens(self.embed_client)
         budget = min(target, ceiling)
@@ -193,15 +194,15 @@ class RagPipeline:
             ceiling,
         )
 
-        # CRASH-SAFE PARSE: each doc's chunks are appended to a cache file the
-        # instant they're parsed. A crash/kill (or a segfault in the later embed
-        # step) never loses parse work — re-running ingest skips docs already in
-        # the cache and resumes. The expensive CPU parse therefore happens once.
+        # Crash-safe parse: each doc's chunks are appended to a cache file as
+        # soon as they're parsed. A crash, kill, or segfault in the later embed
+        # step does not lose parse work; re-running ingest skips docs already in
+        # the cache and resumes, so the expensive CPU parse runs once.
         cache_path = self.cfg.parse_cache_path
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         done_doc_ids = _cached_doc_ids(cache_path)
         if done_doc_ids:
-            logger.info("[ingest] resuming — %d docs already in parse cache", len(done_doc_ids))
+            logger.info("[ingest] resuming: %d docs already in parse cache", len(done_doc_ids))
 
         total = len(paths)
         with cache_path.open("a", encoding="utf-8") as cache:
@@ -209,10 +210,10 @@ class RagPipeline:
                 doc_id = _doc_id_from_path(path)
                 entry = by_id.get(doc_id) if doc_id is not None else None
                 if entry is None:
-                    logger.warning("no manifest entry for %s — skipping", path)
+                    logger.warning("no manifest entry for %s, skipping", path)
                     continue
                 if entry.id in done_doc_ids:
-                    logger.info("[ingest] %d/%d  doc %s  cached — skip parse", i, total, entry.id)
+                    logger.info("[ingest] %d/%d  doc %s  cached, skip parse", i, total, entry.id)
                     continue
                 try:
                     if parser == "pymupdf":
@@ -227,9 +228,9 @@ class RagPipeline:
                         doc_chunks = chunk_mod.chunk_document(doc, entry, max_tokens=budget)
                     if vision and path.suffix.lower() == ".pdf":
                         # Optional: read figures/charts into text chunks (extra
-                        # Docling parse + a vision model call per figure). Isolated
-                        # in its own try so a vision failure never costs us the
-                        # already-parsed TEXT chunks — figures are best-effort.
+                        # Docling parse + a vision model call per figure). Wrapped
+                        # in its own try so a vision failure does not cost us the
+                        # already-parsed text chunks; figures are best-effort.
                         try:
                             from accurag import vision as vision_mod
 
@@ -241,9 +242,9 @@ class RagPipeline:
                                     "[ingest] doc %s: +%d figure chunks", entry.id, len(figs)
                                 )
                                 doc_chunks = doc_chunks + figs
-                        except Exception as vexc:  # noqa: BLE001 — figures are optional
+                        except Exception as vexc:  # noqa: BLE001 (figures are optional)
                             logger.warning(
-                                "[ingest] doc %s: figure extraction failed (%s) — "
+                                "[ingest] doc %s: figure extraction failed (%s), "
                                 "keeping text chunks",
                                 entry.id,
                                 vexc,
@@ -259,7 +260,7 @@ class RagPipeline:
                         entry.id,
                         len(doc_chunks),
                     )
-                except Exception as exc:  # noqa: BLE001 — one bad doc must not kill the run
+                except Exception as exc:  # noqa: BLE001 (one bad doc must not kill the run)
                     logger.warning("[ingest] failed doc %s (%s): %s", entry.id, path.name, exc)
 
         all_chunks = _load_cached_chunks(cache_path)
@@ -267,14 +268,14 @@ class RagPipeline:
             logger.warning("ingest produced no chunks")
             return 0
 
-        logger.info("[ingest] parse done: %d chunks — embedding (dense+sparse)…", len(all_chunks))
+        logger.info("[ingest] parse done: %d chunks, embedding (dense+sparse)…", len(all_chunks))
         texts = [c.text for c in all_chunks]
         dense_vectors = embed.embed_texts(texts, self.embed_client, model=self.cfg.embed_model)
         sparse_vectors = sparse_embed.sparse_embed_texts(texts, self.sparse_model)
 
         self._persist_chunks(all_chunks, dense_vectors, sparse_vectors)
 
-        logger.info("[ingest] embedded — building collection + indexing into Qdrant…")
+        logger.info("[ingest] embedded, building collection + indexing into Qdrant…")
         client = self.qdrant
         index.build_collection(
             client, dim=len(dense_vectors[0]), with_sparse=True, collection=self.cfg.collection
@@ -325,8 +326,8 @@ class RagPipeline:
             rerank_candidates: How many candidates to over-fetch before reranking
                       (``hybrid_rerank`` only). Defaults to ``settings.rerank_candidates``
                       (20). A deeper pool (50) was measured and did slightly worse
-                      on the bundled corpus (first-stage recall is saturated — see
-                      docs/EVAL_RESULTS.md); tune it up for a harder corpus.
+                      on the bundled corpus, where first-stage recall is saturated
+                      (see docs/EVAL_RESULTS.md); tune it up for a harder corpus.
 
         Returns:
             Ranked list of :class:`RetrievedChunk` (rank 0 = best).
@@ -354,7 +355,7 @@ class RagPipeline:
             self.qdrant, dense_vec, sparse_vec, k=max(k, candidates), collection=col
         )
         if not fetched:
-            return []  # nothing to rerank — skip building the Cohere client
+            return []  # nothing to rerank, so skip building the Cohere client
         return rerank.rerank(query, fetched, top_n=k, client=self.reranker)
 
     # ------------------------------------------------------------------
@@ -370,9 +371,9 @@ class RagPipeline:
         """Retrieve context for *query* and return a grounded Answer.
 
         ``Answer.sources`` is exactly the set of chunks that were retrieved and
-        fed to the model — deterministic provenance set in Python, not
-        self-reported by the LLM. There is no hallucinated citation to validate:
-        every source is, by construction, a chunk the answer was grounded on.
+        fed to the model. The provenance is set in Python rather than reported by
+        the LLM, so there is no hallucinated citation to validate: every source
+        is, by construction, a chunk the answer was grounded on.
         """
         from accurag.answer import build_answer
 
@@ -396,7 +397,7 @@ class RagPipeline:
         Always computes retrieval metrics (recall@k, MRR) and p95 latency per
         strategy. When ``answer_quality`` is True, also generates an answer per
         question (via the configured generator LLM) and grades faithfulness +
-        answer relevancy with a separate judge LLM (gpt-4o-mini ≠ generator) —
+        answer relevancy with a separate judge LLM (gpt-4o-mini ≠ generator);
         see :func:`accurag.evaluate.judge_answer_quality`. That path makes
         generator + judge API calls, so it is opt-in.
 
@@ -421,9 +422,9 @@ class RagPipeline:
                 retrieved = self.retrieve(qa.question, strategy=strategy, k=k)
                 latencies.append((time.perf_counter() - start) * 1000.0)
 
-                # The golden set may label relevance at DOC level (manifest id,
-                # e.g. "12") or CHUNK level ("12-3"). Compare at matching
-                # granularity so doc-level placeholders score meaningfully — a
+                # The golden set may label relevance at doc level (manifest id,
+                # e.g. "12") or chunk level ("12-3"). Compare at matching
+                # granularity so doc-level placeholders score meaningfully: a
                 # retrieved chunk "12-3" counts as a hit for relevant doc "12".
                 relevant = qa.relevant_chunk_ids
                 doc_level = bool(relevant) and all("-" not in str(r) for r in relevant)
@@ -437,7 +438,7 @@ class RagPipeline:
                 if answer_quality:
                     # ask() raises on an empty/refused completion (so a single
                     # call surfaces the failure loudly). In a batch eval, though,
-                    # one empty answer must not abort the run — record it empty
+                    # one empty answer must not abort the run, so record it empty
                     # (the judge scores it unfaithful) and move on. Caught
                     # narrowly: a real API/network error still propagates.
                     try:

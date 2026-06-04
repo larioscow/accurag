@@ -28,7 +28,7 @@ def test_retrieved_chunk_holds_chunk_score_rank():
 
 
 def test_answer_carries_typed_sources():
-    """sources are RetrievedChunk objects — typed provenance, no parsing needed."""
+    """sources are RetrievedChunk objects: typed provenance, no parsing needed."""
     ans = Answer(
         text="The answer.",
         sources=[RetrievedChunk(chunk=_chunk("1-0"), score=0.9, rank=0)],
@@ -100,7 +100,7 @@ def test_eval_report_to_markdown_has_header_and_strategies():
 
 def test_eval_report_shows_judge_coverage_only_when_partial():
     """The Judge Cov. column appears only when a run was partial (< 1.0), so the
-    table stays clean normally but stays honest when the judge skipped samples."""
+    table stays clean normally and stays accurate when the judge skipped samples."""
     full = EvalReport(rows=[EvalRow(strategy="dense", faithfulness=0.9, judge_coverage=1.0)])
     assert "Judge Cov." not in full.to_markdown()
 

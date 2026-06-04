@@ -1,4 +1,4 @@
-"""Retrieval from Qdrant — dense and hybrid (dense+sparse, server-side RRF).
+"""Retrieval from Qdrant: dense and hybrid (dense+sparse, server-side RRF).
 
 All public functions accept an injectable QdrantClient so callers and tests
 can pass any client (e.g. QdrantClient(":memory:")) without touching disk or

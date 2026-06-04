@@ -1,4 +1,4 @@
-"""Tests for sparse_embed.py — all hermetic, no fastembed/network needed."""
+"""Tests for sparse_embed.py. All hermetic, with no fastembed or network needed."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from types import SimpleNamespace
 from typing import Any
 
 # ---------------------------------------------------------------------------
-# Helpers — a minimal fake SparseEmbedding and fake model that matches the
+# Helpers: a minimal fake SparseEmbedding and fake model that matches the
 # fastembed SparseTextEmbedding.embed() contract without importing fastembed.
 # ---------------------------------------------------------------------------
 
@@ -122,5 +122,5 @@ def test_sparse_embed_texts_coerces_numpy_to_native_python():
 
 def test_make_sparse_model_is_callable():
     """make_sparse_model is a callable (we only check the symbol exists and is
-    callable — we do NOT invoke it so no network/fastembed download is needed)."""
+    callable; we do NOT invoke it so no network/fastembed download is needed)."""
     assert callable(make_sparse_model)

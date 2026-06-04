@@ -22,7 +22,7 @@ def _section_from_meta(raw_chunk: Any) -> str | None:
     try:
         headings: list[str] = raw_chunk.meta.export_json_dict().get("headings", [])
         return headings[0] if headings else None
-    except Exception:  # noqa: BLE001 — section is best-effort; odd/missing Docling
+    except Exception:  # noqa: BLE001 (section is best-effort; odd/missing Docling)
         return None  # heading metadata legitimately maps to no section
 
 
@@ -51,14 +51,14 @@ def _to_chunk(raw_chunk: Any, entry: ManifestEntry, ordinal: int) -> Chunk:
 def _make_hybrid_chunker(max_tokens: int | None):
     """Build a Docling HybridChunker, optionally with a custom token budget.
 
-    The budget lives on the chunker's *tokenizer* (``HuggingFaceTokenizer.max_tokens``),
-    so when *max_tokens* is given we re-wrap the default chunker's tokenizer with
-    the new budget. ``None`` → Docling's default (keeps the simple monkeypatch path).
+    The budget lives on the chunker's tokenizer (``HuggingFaceTokenizer.max_tokens``),
+    so when ``max_tokens`` is given we re-wrap the default chunker's tokenizer with
+    the new budget. ``None`` uses Docling's default and keeps the simple monkeypatch path.
     """
     try:
         from docling.chunking import HybridChunker  # lazy import
     except ModuleNotFoundError as exc:
-        raise ImportError("Parser deps not installed — run: pip install 'accurag[ingest]'") from exc
+        raise ImportError("Parser deps not installed. Run: pip install 'accurag[ingest]'") from exc
 
     if not max_tokens:
         return HybridChunker()
@@ -73,7 +73,7 @@ def _make_hybrid_chunker(max_tokens: int | None):
 def chunk_document(doc: Any, entry: ManifestEntry, max_tokens: int | None = None) -> list[Chunk]:
     """Chunk a DoclingDocument into a list of Chunk objects.
 
-    Uses Docling's HybridChunker (structure-aware), imported lazily. *max_tokens*
+    Uses Docling's HybridChunker (structure-aware), imported lazily. ``max_tokens``
     sets the per-chunk token budget; when None, Docling's default (512) is used.
 
     Args:
@@ -103,7 +103,7 @@ def chunk_text(
     The lightweight counterpart to :func:`chunk_document` for the no-ML
     ``fastparse`` path: a sliding window over the document's tokens
     (~``max_tokens`` each, ``overlap_tokens`` overlap) using the same tiktoken
-    encoding as the embedder. No heading/section metadata (section=None).
+    encoding as the embedder. There is no heading/section metadata (section=None).
     """
     import tiktoken
 

@@ -6,8 +6,8 @@ Rules
   ``entry.pdf_url`` ends with ``.pdf``; otherwise ``<id>.html``.
 - fetch_all: skips files that already exist on disk; catches per-URL
   exceptions (logs + continues) so one bad URL never aborts the run.
-- httpx is imported at module level (it is a pure networking lib, not a
-  heavy SDK with API-key requirements — no lazy-import needed).
+- httpx is imported at module level. It is a networking library with no
+  API-key requirements, so there is no need to lazy-import it.
 """
 
 from __future__ import annotations
@@ -46,9 +46,9 @@ def target_path(entry: ManifestEntry, raw_dir: Path) -> Path:
 
     Naming convention
     -----------------
-    ``<id>.pdf``  — when ``entry.source == "arxiv"`` **or** ``entry.pdf_url``
-                    ends with ``.pdf`` (case-insensitive).
-    ``<id>.html`` — all other cases (vendor/other HTML pages).
+    ``<id>.pdf``: when ``entry.source == "arxiv"`` or ``entry.pdf_url`` ends
+    with ``.pdf`` (case-insensitive).
+    ``<id>.html``: all other cases (vendor/other HTML pages).
     """
     is_pdf = entry.source == "arxiv" or entry.pdf_url.lower().endswith(".pdf")
     ext = "pdf" if is_pdf else "html"

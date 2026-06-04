@@ -123,8 +123,8 @@ def test_judge_answer_quality_empty_samples():
 
 def test_judge_answer_quality_survives_bad_judge_responses():
     """A bad judge reply (API error, or a malformed no-tool-call response) must
-    NOT kill the run — the sample is skipped, the good ones are still scored, and
-    coverage reflects the loss. This is the robustness Ragas lacks."""
+    not kill the run. The sample is skipped, the good ones are still scored, and
+    coverage reflects the loss."""
     import json
     from types import SimpleNamespace
 

@@ -38,7 +38,7 @@ class Settings(BaseSettings):
 
     chunk_size: int = 512  # target chunk size in tokens (clamped to the embedder's window)
     rerank_candidates: int = 20  # candidates over-fetched before reranking; deeper (50) measured
-    #                              no better on this corpus (see docs/EVAL_RESULTS.md) — tunable.
+    #                              no better on this corpus (see docs/EVAL_RESULTS.md). Tunable.
 
 
 settings = Settings()

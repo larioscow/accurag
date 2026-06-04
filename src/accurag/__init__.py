@@ -1,6 +1,6 @@
 """accurag: a reusable, evaluation-driven RAG library over a curated corpus.
 
-The public surface is intentionally small. Importing this package is cheap and
+The public surface is small. Importing this package is cheap and
 key-free: ``RagPipeline`` builds its heavy collaborators (anthropic, cohere,
 fastembed, qdrant) lazily, so ``import accurag`` needs none of them installed.
 """

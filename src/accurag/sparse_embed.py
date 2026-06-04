@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Any
 
-# Default sparse model — SPLADE++ is the primary fastembed sparse model and
+# Default sparse model. SPLADE++ is the primary fastembed sparse model and
 # serves the BM25/BM42-style sparse-representation role in the pipeline.
 _DEFAULT_SPARSE_MODEL = "prithivida/Splade_PP_en_v1"
 
@@ -57,8 +57,8 @@ def sparse_embed_texts(
     # Batch the input. fastembed runs a native onnx model and parallelises large
     # inputs, which segfaults at full-corpus scale (thousands of texts) on some
     # platforms (the leaked-semaphore crash on Apple Silicon). Keeping each
-    # embed() call small — mirroring the dense embedder's batching — avoids that
-    # and bounds memory. Order is preserved across batches.
+    # embed() call small, like the dense embedder's batching, avoids that and
+    # bounds memory. Order is preserved across batches.
     for start in range(0, len(texts), batch_size):
         batch = texts[start : start + batch_size]
         for embedding in model.embed(batch):

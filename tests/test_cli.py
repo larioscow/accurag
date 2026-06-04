@@ -1,4 +1,4 @@
-"""Tests for accurag.cli — hermetic (no pipeline construction with real clients)."""
+"""Tests for accurag.cli. Hermetic (no pipeline construction with real clients)."""
 
 from __future__ import annotations
 
@@ -41,8 +41,8 @@ def test_make_pipeline_defaults_inject_nothing():
 
 
 def test_cmd_ask_handles_empty_completion_cleanly(monkeypatch, capsys):
-    """A refused/empty completion must exit non-zero with a message, not a raw
-    traceback (the empty-completion guard raises; the CLI owns user-facing errors)."""
+    """A refused/empty completion must exit non-zero with a message rather than a
+    raw traceback. The empty-completion guard raises; the CLI handles user-facing errors."""
     from accurag import cli
 
     class _Pipe:

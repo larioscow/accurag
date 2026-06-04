@@ -1,4 +1,4 @@
-"""Tests for accurag.answer — hermetic, no API keys, fake LLM injected."""
+"""Tests for accurag.answer: hermetic, no API keys, fake LLM injected."""
 
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def test_sources_are_the_retrieved_chunks_deterministically() -> None:
 
     assert isinstance(answer, Answer)
     assert answer.text == "Models lose track of the middle."
-    # sources are exactly the retrieved set — typed, complete, not LLM-reported
+    # sources are exactly the retrieved set: typed and complete, taken from retrieval rather than the LLM's report
     assert [s.chunk.chunk_id for s in answer.sources] == ["1-0", "1-1"]
     assert answer.sources[0].chunk.source_title == "Lost in the Middle"
     assert answer.sources[0].chunk.url == "https://example.com/paper"

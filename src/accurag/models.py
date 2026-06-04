@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 
 class ManifestEntry(BaseModel):
-    """One row of corpus/manifest.json — a single source document."""
+    """One row of corpus/manifest.json: a single source document."""
 
     id: int
     title: str
@@ -21,10 +21,10 @@ class ManifestEntry(BaseModel):
 
 
 class Chunk(BaseModel):
-    """One retrievable piece of a document. Every field exists so a citation
-    can be shown and verified, or so chunks can be filtered by document/theme."""
+    """One retrievable piece of a document. The fields let a citation be shown
+    and verified, and let chunks be filtered by document or theme."""
 
-    chunk_id: str  # f"{doc_id}-{ordinal}" — your [x:y]
+    chunk_id: str  # f"{doc_id}-{ordinal}" (the [x:y] citation form)
     doc_id: int  # which ManifestEntry it came from
     text: str  # the content itself
     source_title: str  # human-readable citation ("Lost in the Middle")
@@ -44,11 +44,11 @@ class RetrievedChunk(BaseModel):
 class Answer(BaseModel):
     """A grounded answer plus the sources it was generated from.
 
-    ``sources`` are the retrieved chunks the answer was conditioned on — known
-    deterministically in Python (NOT the model's self-report). A consumer gets
-    typed provenance (``source.chunk.source_title``, ``.url``, ``.section``,
-    ``.text``, ``source.score``, ``.rank``) to render source cards or links
-    without parsing anything out of ``text``.
+    ``sources`` are the retrieved chunks the answer was conditioned on. They are
+    known in Python from retrieval rather than parsed out of the model's output,
+    so a consumer gets typed provenance (``source.chunk.source_title``, ``.url``,
+    ``.section``, ``.text``, ``source.score``, ``.rank``) to render source cards
+    or links without parsing anything out of ``text``.
     """
 
     text: str
@@ -76,21 +76,21 @@ class EvalRow(BaseModel):
     mrr: float | None = None
     p95_latency_ms: float | None = None
     # Fraction of answer-quality samples the judge actually graded (< 1.0 means
-    # some judge calls failed and were skipped — the faithfulness / answer-rel
+    # some judge calls failed and were skipped, so the faithfulness / answer-rel
     # means rest on fewer judgements). Surfaced in the table only when < 1.0.
     judge_coverage: float | None = None
 
 
 class EvalReport(BaseModel):
-    """The naive/hybrid/rerank comparison table — the project's money artifact."""
+    """The naive/hybrid/rerank comparison table."""
 
     rows: list[EvalRow]
 
     def to_markdown(self) -> str:
         """Render the rows as a GitHub-flavored markdown table.
         None scores show as an em dash. A "Judge Cov." column is added only when
-        some run was partial (coverage < 1.0), so the table stays clean when the
-        judge graded everything but stays honest when it didn't."""
+        some run was partial (coverage < 1.0), so the column appears when the
+        judge skipped some samples and is omitted when it graded everything."""
         show_coverage = any(
             r.judge_coverage is not None and r.judge_coverage < 1.0 for r in self.rows
         )

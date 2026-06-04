@@ -1,4 +1,4 @@
-"""Tests for fetch.py — all hermetic, no network."""
+"""Tests for fetch.py. All hermetic, no network."""
 
 from accurag.models import ManifestEntry
 
@@ -66,7 +66,7 @@ def test_load_manifest_returns_list_of_manifest_entries(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# target_path — the three cases
+# target_path: the three cases
 # ---------------------------------------------------------------------------
 
 
@@ -125,7 +125,7 @@ class TestTargetPath:
 
 
 # ---------------------------------------------------------------------------
-# fetch_all — no network; verify skip-if-exists and continue-on-error logic
+# fetch_all: no network; verify skip-if-exists and continue-on-error logic
 # ---------------------------------------------------------------------------
 
 

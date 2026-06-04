@@ -1,10 +1,11 @@
 """Lightweight, no-ML document text extraction (PyMuPDF for PDFs, regex strip
 for HTML).
 
-This is the fast/low-memory alternative to the Docling parser: pure C text
-extraction, no PyTorch, no neural layout models, ~tens of MB of RAM, milliseconds
-per doc. Trade-off vs Docling: no structured table extraction (tables come out
-as inline text). Used by ``RagPipeline.ingest(parser="pymupdf")``.
+This is the fast, low-memory alternative to the Docling parser: pure C text
+extraction without PyTorch or neural layout models, using tens of MB of RAM and
+milliseconds per doc. The trade-off versus Docling is that it has no structured
+table extraction (tables come out as inline text). Used by
+``RagPipeline.ingest(parser="pymupdf")``.
 """
 
 from __future__ import annotations
@@ -39,7 +40,7 @@ def extract_text(path: Path) -> str:
             import pymupdf
         except ModuleNotFoundError as exc:
             raise ImportError(
-                "Parser deps not installed — run: pip install 'accurag[ingest]'"
+                "Parser deps not installed. Run: pip install 'accurag[ingest]'"
             ) from exc
 
         with pymupdf.open(str(path)) as doc:

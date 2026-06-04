@@ -1,4 +1,4 @@
-"""Tests for accurag.prompts — pure Python, no external dependencies."""
+"""Tests for accurag.prompts: pure Python, no external dependencies."""
 
 from __future__ import annotations
 
@@ -47,7 +47,7 @@ def test_prompt_contains_all_chunk_ids():
 
 def test_prompt_contains_i_dont_know_guardrail():
     """The prompt must instruct the model to say 'I don't know' when the
-    answer is not in the context — the core anti-hallucination guard."""
+    answer is not in the context. This is the core anti-hallucination guard."""
     query = "Anything"
     retrieved = [_make_retrieved("1-0")]
     prompt = build_grounded_prompt(query, retrieved)
@@ -67,7 +67,7 @@ def test_prompt_instructs_answer_only_from_context():
 
 
 def test_prompt_instructs_clean_prose_no_citation_markers():
-    """The model must write clean prose — sources are tracked separately, so the
+    """The model must write clean prose. Sources are tracked separately, so the
     prompt tells it NOT to add citation/chunk-id markers."""
     query = "How does reranking help?"
     retrieved = [_make_retrieved("3-1")]

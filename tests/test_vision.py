@@ -1,4 +1,4 @@
-"""Tests for accurag.vision — hermetic (fake vision clients, tiny PIL image, no Docling)."""
+"""Tests for accurag.vision. Hermetic (fake vision clients, tiny PIL image, does not run Docling)."""
 
 from __future__ import annotations
 

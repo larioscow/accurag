@@ -1,24 +1,24 @@
-"""Vision figure extraction — read charts/figures into text at index time.
+"""Vision figure extraction: read charts/figures into text at index time.
 
 Text parsers can't read the content of figures (numbers in bar charts, axes,
 diagram relationships), so figure-heavy documents lose information the retriever
 can never match. This module renders each detected figure to an image and has a
 vision model describe/extract it as plain text, producing extra chunks the
-retriever *can* match.
+retriever can match.
 
-It is an OPTIONAL, index-time step (`RagPipeline.ingest(vision=True)`):
+It is an optional, index-time step (`RagPipeline.ingest(vision=True)`):
 - Docling picture rendering is imported lazily (needs `accurag[ingest]`).
 - The vision model is configurable (`settings.vision_model`); it defaults to
-  **Claude Sonnet**, which reads multi-panel chart *structure* (titles, axes,
+  Claude Sonnet, which reads multi-panel chart structure (titles, axes,
   series, labels) that gpt-4o-mini misreads. Set `model="gpt-4o-mini"` for a
   cheaper bulk pass on simple figures.
 
-Honest limitation (measured — see docs/EVAL_RESULTS.md): vision reads chart
-*structure* reliably but *guesses bar/line heights*, so extracted **numeric
-values are unreliable**. A quantitative chart answer can come back grounded in a
-real source chunk yet numerically wrong, and deterministic provenance does not
-catch it (the chunk exists; its number was mis-read). Treat this as a best-effort
-recall aid for figure-heavy docs, NOT a trustworthy table/figure extractor.
+Measured limitation (see docs/EVAL_RESULTS.md): vision reads chart structure
+reliably but guesses bar/line heights, so extracted numeric values are
+unreliable. A quantitative chart answer can come back grounded in a real source
+chunk yet numerically wrong, and deterministic provenance does not catch it (the
+chunk exists; its number was mis-read). Treat this as a best-effort recall aid
+for figure-heavy docs, not a trustworthy table/figure extractor.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ _FIG_PROMPT = (
     "from it as plain text: title/caption, axis labels, every series, and all "
     "numeric values you can read (including approximate values for bar/line "
     "heights). If it's a diagram, describe its components and their relationships. "
-    "Be concrete and exhaustive — this text replaces the image for search."
+    "Be concrete and exhaustive. This text replaces the image for search."
 )
 
 _converter = None
@@ -56,13 +56,13 @@ def _figure_converter():
             from docling.document_converter import DocumentConverter, PdfFormatOption
         except ModuleNotFoundError as exc:
             raise ImportError(
-                "Parser deps not installed — run: pip install 'accurag[ingest]'"
+                "Parser deps not installed. Run: pip install 'accurag[ingest]'"
             ) from exc
 
         opts = PdfPipelineOptions()
         opts.accelerator_options = AcceleratorOptions(device=AcceleratorDevice.CPU, num_threads=4)
         opts.do_ocr = False
-        opts.generate_picture_images = True  # the whole point — render figures
+        opts.generate_picture_images = True  # render figures so they can be described
         opts.images_scale = 2.0  # higher res so chart text/values are legible
         _converter = DocumentConverter(
             format_options={
@@ -92,7 +92,7 @@ def _b64_png(image: Any) -> str:
 
 
 def _vision_client(model: str, client: Any) -> Any:
-    """Build the right provider client for *model* (Anthropic for claude-*, else OpenAI)."""
+    """Build the right provider client for ``model`` (Anthropic for claude-*, else OpenAI)."""
     if client is not None:
         return client
     from accurag.config import settings
@@ -109,13 +109,13 @@ def _vision_client(model: str, client: Any) -> Any:
 def describe_figure(image: Any, client: Any = None, model: str | None = None) -> str:
     """Describe/extract one figure image as plain text via a vision model.
 
-    Defaults to ``settings.vision_model`` (Claude Sonnet — it reads multi-panel
-    chart *structure* that gpt-4o-mini misreads). Pass ``model="gpt-4o-mini"``
+    Defaults to ``settings.vision_model`` (Claude Sonnet, which reads multi-panel
+    chart structure that gpt-4o-mini misreads). Pass ``model="gpt-4o-mini"``
     for a cheaper bulk pass on simple figures.
 
-    Reliability: structure (titles/axes/series) yes; **numeric values no** — the
-    model guesses bar/line heights, so quantitative extractions are unreliable
-    (see the module docstring and docs/EVAL_RESULTS.md).
+    Reliability: the model reads structure (titles/axes/series) but guesses
+    bar/line heights, so numeric values and quantitative extractions are
+    unreliable (see the module docstring and docs/EVAL_RESULTS.md).
     """
     from accurag.config import settings
 
@@ -140,7 +140,7 @@ def describe_figure(image: Any, client: Any = None, model: str | None = None) ->
                 }
             ],
         )
-        # Filter to text blocks — a leading thinking/redacted block has no .text
+        # Filter to text blocks: a leading thinking/redacted block has no .text
         # (mirrors AnthropicLLM.answer). Missing/empty text -> "" (caller skips it).
         return "".join(b.text for b in resp.content if getattr(b, "type", None) == "text").strip()
 
@@ -167,7 +167,7 @@ def figure_chunks(
     client: Any = None,
     model: str | None = None,
 ) -> list[Chunk]:
-    """Extract each figure from *path* and return one text Chunk per figure.
+    """Extract each figure from ``path`` and return one text Chunk per figure.
 
     chunk_id is ``"{doc_id}-fig{i}"`` so figure chunks never collide with the
     document's text chunks (``"{doc_id}-{ordinal}"``).

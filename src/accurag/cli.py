@@ -81,7 +81,7 @@ def _cmd_ask(args: argparse.Namespace) -> int:
     print("Sources:")
     for s in answer.sources:
         c = s.chunk
-        section = f" — {c.section}" if c.section else ""
+        section = f", {c.section}" if c.section else ""
         print(f"  [{c.chunk_id}] {c.source_title}{section} ({c.url})")
     return 0
 
@@ -92,7 +92,7 @@ def _load_golden(path: Path) -> list[GoldenQA]:
     stripped = text.lstrip()
     if stripped.startswith("["):  # JSON array
         rows = json.loads(text)
-    else:  # JSONL — one GoldenQA per non-blank line
+    else:  # JSONL: one GoldenQA per non-blank line
         rows = [json.loads(line) for line in text.splitlines() if line.strip()]
     return [GoldenQA(**item) for item in rows]
 
@@ -194,7 +194,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--answer-quality",
         action="store_true",
         help="Also grade faithfulness + answer relevancy with an LLM judge "
-        "(generates answers + judge calls — costs API; judge=gpt-4o-mini).",
+        "(generates answers + judge calls, costs API; judge=gpt-4o-mini).",
     )
     _add_embedder_flag(p_eval)
     p_eval.set_defaults(func=_cmd_evaluate)

@@ -1,7 +1,7 @@
-"""Tests for accurag.llm — hermetic, no API keys, no network.
+"""Tests for accurag.llm: hermetic, no API keys, no network.
 
-Each provider (AnthropicLLM, OpenAILLM) now returns plain answer **text** —
-no tool use, no structured citation schema. Fakes return canned text.
+Each provider (AnthropicLLM, OpenAILLM) now returns plain answer text. There is
+no tool use or structured citation schema. Fakes return canned text.
 """
 
 from __future__ import annotations
@@ -13,7 +13,7 @@ EXPECTED_ANSWER = "RAG improves factual grounding."
 
 
 # ---------------------------------------------------------------------------
-# Fake Anthropic client — messages.create -> content=[text block]
+# Fake Anthropic client: messages.create -> content=[text block]
 # ---------------------------------------------------------------------------
 
 
@@ -29,7 +29,7 @@ class FakeAnthropicClient:
 
 
 # ---------------------------------------------------------------------------
-# Fake OpenAI client — chat.completions.create -> choices[0].message.content
+# Fake OpenAI client: chat.completions.create -> choices[0].message.content
 # ---------------------------------------------------------------------------
 
 

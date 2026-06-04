@@ -1,8 +1,8 @@
 """Build a grounded Answer from retrieved context.
 
-The model writes the answer text; the **sources are the retrieved chunks**,
-attached deterministically in Python. No LLM-reported citations, no parsing — a
-consumer gets typed provenance (``answer.sources``) straight from retrieval.
+The model writes the answer text. The sources are the retrieved chunks,
+attached in Python rather than parsed out of the model output, so a consumer
+gets typed provenance in ``answer.sources``.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ def build_answer(
 
     Returns:
         An :class:`Answer` with the generated ``text`` and ``sources`` set to the
-        retrieved chunks the answer was conditioned on (deterministic provenance).
+        retrieved chunks the answer was conditioned on.
     """
     prompt = build_grounded_prompt(query, retrieved)
     text = llm.answer(prompt)

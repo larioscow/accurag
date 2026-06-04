@@ -2,9 +2,9 @@
 
 Design notes
 ------------
-- `cohere` is imported **lazily** (inside `_make_client`) so the module can be
-  imported with no API key and no network — satisfying the unit-test requirement.
-- The underlying Cohere client is **injectable** via the `client` parameter, so
+- `cohere` is imported lazily (inside `_make_client`) so the module can be
+  imported without an API key or network access, which the unit tests require.
+- The underlying Cohere client is injectable via the `client` parameter, so
   tests pass a fake without ever touching the SDK.
 - Uses `co.v2.rerank(...)` which is the current (non-deprecated) call shape.
   Response items carry `.index` (original position) and `.relevance_score`.
@@ -19,14 +19,14 @@ from accurag.models import RetrievedChunk
 
 def _make_client(api_key: str | None = None) -> Any:
     """Lazily import cohere and build a ClientV2 from *api_key* (default settings)."""
-    import cohere  # lazy — keeps import cost + key requirement out of module load
+    import cohere  # lazy: keeps import cost + key requirement out of module load
 
     from accurag.config import settings
 
     key = api_key if api_key is not None else settings.cohere_api_key
-    # NOTE: pass the key as-is — do NOT add the `or None` coercion used by
-    # embed.py / llm.py. cohere.ClientV2 *raises* on api_key=None but tolerates
-    # "" (failure deferred to the first call). "Unifying" the three providers
+    # NOTE: pass the key as-is; do not add the `or None` coercion used by
+    # embed.py / llm.py. cohere.ClientV2 raises on api_key=None but tolerates
+    # "" (failure deferred to the first call). Unifying the three providers
     # with `or None` would turn cohere's unconfigured case into an eager crash.
     return cohere.ClientV2(api_key=key)
 
@@ -106,7 +106,7 @@ def rerank(
     response = _rerank_with_retry(client, model, query, documents, min(top_n, len(documents)))
 
     # response.results is sorted by descending relevance_score;
-    # each result carries `.index` — the position in the original `retrieved` list.
+    # each result carries `.index`, the position in the original `retrieved` list.
     reranked: list[RetrievedChunk] = []
     for new_rank, result in enumerate(response.results):
         original = retrieved[result.index]

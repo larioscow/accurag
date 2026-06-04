@@ -1,4 +1,4 @@
-"""Tests for accurag.parse — trivial import/callable check only (no network, no disk parse)."""
+"""Tests for accurag.parse. Trivial import/callable check only (does not touch the network or parse from disk)."""
 
 import inspect
 

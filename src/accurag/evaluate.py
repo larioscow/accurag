@@ -2,17 +2,17 @@
 
 Two kinds of metric live here:
 
-- **Pure retrieval metrics** (``recall_at_k``, ``mrr``) — no external libraries,
-  no network, fully unit-tested on hand-computed examples. These score whether
-  the *right* chunks were retrieved, independent of any LLM.
-- **Answer-quality metrics** (``ragas_answer_scores``) — faithfulness, answer
-  relevancy, context precision/recall — which require an LLM judge. Ragas is
-  imported **lazily** inside that function and the judge LLM/embeddings are
+- Pure retrieval metrics (``recall_at_k``, ``mrr``) use no external libraries
+  and no network, and are unit-tested on hand-computed examples. They score
+  whether the right chunks were retrieved, independent of any LLM.
+- Answer-quality metrics (``ragas_answer_scores``) cover faithfulness, answer
+  relevancy, and context precision/recall, which require an LLM judge. Ragas is
+  imported lazily inside that function and the judge LLM/embeddings are
   injectable, so importing this module (and running the unit tests) needs no
   API key, no network, and no ``ragas`` install.
 
 ``build_report`` assembles per-strategy rows into the ``EvalReport`` whose
-``to_markdown()`` renders the project's money artifact: the
+``to_markdown()`` renders the project's main artifact, the
 naive-vs-hybrid-vs-rerank comparison table.
 """
 
@@ -30,18 +30,18 @@ def recall_at_k(
     relevant_ids: set[str] | list[str],
     retrieved_ids: list[str],
 ) -> float:
-    """Fraction of the relevant chunk_ids that appear in *retrieved_ids*.
+    """Fraction of the relevant chunk_ids that appear in ``retrieved_ids``.
 
-    This is recall over whatever ``k`` chunks the caller chose to retrieve —
+    This is recall over whatever ``k`` chunks the caller chose to retrieve, so
     pass the top-k retrieved ids in. Duplicate retrieved ids are de-duplicated
     so they cannot inflate the score.
 
     Args:
-        relevant_ids:  The chunk_ids that *should* be retrieved (the golden set).
+        relevant_ids:  The chunk_ids that should be retrieved (the golden set).
         retrieved_ids: The chunk_ids actually retrieved, best-first.
 
     Returns:
-        ``hits / len(relevant)`` in ``[0, 1]``. An empty *relevant_ids* means
+        ``hits / len(relevant)`` in ``[0, 1]``. An empty ``relevant_ids`` means
         there is nothing to find, so recall is trivially ``1.0``.
     """
     relevant = set(relevant_ids)
@@ -56,7 +56,7 @@ def mrr(
     relevant_ids: set[str] | list[str],
     ranked_ids: list[str],
 ) -> float:
-    """Reciprocal rank of the first relevant chunk in *ranked_ids*.
+    """Reciprocal rank of the first relevant chunk in ``ranked_ids``.
 
     Args:
         relevant_ids: The chunk_ids that count as relevant.
@@ -78,12 +78,12 @@ def mrr(
 # ---------------------------------------------------------------------------
 # Answer-quality metrics via a lightweight LLM judge.
 #
-# Deliberately NOT Ragas: Ragas pulls the langchain ecosystem and (in the
+# This path avoids Ragas: Ragas pulls the langchain ecosystem and (in the
 # versions we hit) breaks on a missing langchain_community vertexai import. A
-# small, transparent judge over the OpenAI SDK we already depend on avoids that
-# dependency hell, keeps the library lean, and is fully inspectable. The judge
-# model (gpt-4o-mini) differs from the answer generator (Claude) — judge ≠
-# generator, the rigor the eval needs.
+# small judge over the OpenAI SDK we already depend on avoids that dependency,
+# keeps the library lean, and stays inspectable. The judge model (gpt-4o-mini)
+# differs from the answer generator (Claude), so the judge is not grading its
+# own output.
 # ---------------------------------------------------------------------------
 
 _JUDGE_SCHEMA: dict[str, Any] = {
@@ -96,14 +96,14 @@ _JUDGE_SCHEMA: dict[str, Any] = {
                 "0..1: the fraction of the ANSWER's factual claims that are "
                 "directly supported by the CONTEXT. 1.0 = every claim grounded; "
                 "0.0 = unsupported/hallucinated. If the answer makes no factual "
-                "claims (e.g. 'I don't know'), return 1.0 — nothing is unfaithful."
+                "claims (e.g. 'I don't know'), return 1.0, since nothing is unfaithful."
             ),
         },
         "answer_relevancy": {
             "type": "number",
             "description": (
                 "0..1: how directly and completely the ANSWER addresses the "
-                "QUESTION. A refusal like 'I don't know' is NOT relevant — score "
+                "QUESTION. A refusal like 'I don't know' is NOT relevant, so score "
                 "it near 0.0. A complete, on-topic answer scores near 1.0."
             ),
         },
@@ -126,7 +126,7 @@ def judge_answer_quality(
     client: Any,
     model: str = "gpt-4o-mini",
 ) -> dict[str, float | None]:
-    """LLM-judge faithfulness + answer relevancy, averaged over *samples*.
+    """LLM-judge faithfulness and answer relevancy, averaged over the samples.
 
     Args:
         samples: list of ``{"question": str, "answer": str, "contexts": list[str]}``.
@@ -134,14 +134,14 @@ def judge_answer_quality(
                  ``chat.completions.create`` with tool calling.
         model:   the judge model (must differ from the answer generator).
 
-    Robust by design: a single bad judge reply (refusal, empty tool call,
-    truncated output, or a transient API error) skips that sample and is counted
-    — it never aborts the run. Means are over the *graded* samples.
+    A single bad judge reply (refusal, empty tool call, truncated output, or a
+    transient API error) skips that sample and is counted rather than aborting
+    the run. Means are computed over the graded samples.
 
     Returns:
         ``{"faithfulness": mean|None, "answer_relevancy": mean|None,
-        "coverage": graded/total|None}`` — ``coverage`` < 1.0 means some samples
-        were skipped, so the means rest on fewer judgements.
+        "coverage": graded/total|None}``. A ``coverage`` below 1.0 means some
+        samples were skipped, so the means rest on fewer judgements.
     """
     import json
 
@@ -167,8 +167,8 @@ def judge_answer_quality(
             "Score faithfulness (claims supported by CONTEXT) and answer_relevancy "
             "(does it answer the QUESTION)."
         )
-        # A single bad judge response — a refusal, an empty/again-no tool call,
-        # malformed/truncated output, or a transient API error — must NOT kill
+        # A single bad judge response (a refusal, a missing tool call,
+        # malformed/truncated output, or a transient API error) should not kill
         # the whole eval. Skip the sample and report coverage. (Strict structured
         # output already removes the malformed-JSON class; this guards the rest.)
         try:
@@ -182,9 +182,9 @@ def judge_answer_quality(
             out = json.loads(resp.choices[0].message.tool_calls[0].function.arguments)
             faith.append(float(out["faithfulness"]))
             rel.append(float(out["answer_relevancy"]))
-        except Exception as exc:  # noqa: BLE001 — judge quality is best-effort, never fatal
+        except Exception as exc:  # noqa: BLE001 (judge quality is best-effort, never fatal)
             failures += 1
-            logger.warning("[eval] judge failed on a sample (%s) — skipping", exc)
+            logger.warning("[eval] judge failed on a sample (%s), skipping", exc)
 
     graded = len(faith)
     if failures:
@@ -202,7 +202,7 @@ def judge_answer_quality(
 
 
 def build_report(rows: list[dict[str, Any]] | list[EvalRow]) -> EvalReport:
-    """Assemble per-strategy *rows* into an ``EvalReport``.
+    """Assemble per-strategy ``rows`` into an ``EvalReport``.
 
     Accepts either ready-made ``EvalRow`` instances or plain dicts (which are
     validated into ``EvalRow``), so callers can build rows however is most
@@ -224,10 +224,10 @@ def ragas_answer_scores(
     """Score answer quality with Ragas (faithfulness, answer relevancy,
     context precision, context recall) averaged over the samples.
 
-    Ragas and its judge LLM are heavy / key-requiring, so:
+    Ragas and its judge LLM are heavy and require keys, so:
     - ``ragas`` is imported lazily inside this function (the module imports and
       the unit tests run without it installed);
-    - the judge *llm* and *embeddings* are injected by the caller — wrap your
+    - the judge ``llm`` and ``embeddings`` are injected by the caller. Wrap your
       provider once (e.g. ``LangchainLLMWrapper(ChatOpenAI(...))``) and pass it
       in. This keeps provider choice out of the metric code.
 
@@ -243,7 +243,7 @@ def ragas_answer_scores(
     Returns:
         A mapping from metric name to its mean score over the dataset.
     """
-    # Lazy imports — these pull in ragas + its deps, which the unit tests avoid.
+    # Lazy imports: these pull in ragas and its deps, which the unit tests avoid.
     from ragas import evaluate
     from ragas.dataset_schema import EvaluationDataset
     from ragas.metrics import (

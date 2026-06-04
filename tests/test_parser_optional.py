@@ -2,7 +2,7 @@
 
 These tests assert that when the underlying lazy import fails with
 ``ModuleNotFoundError``, the three parser entry points re-raise a friendly
-``ImportError`` pointing at the install extra — rather than leaking a cryptic
+``ImportError`` pointing at the install extra rather than leaking a cryptic
 ``No module named 'docling'`` to the caller. The deps are still physically
 installed in this venv, so we simulate their absence by monkeypatching
 ``builtins.__import__``.
@@ -16,7 +16,7 @@ import pytest
 
 from accurag.models import ManifestEntry
 
-_MSG = "Parser deps not installed — run: pip install 'accurag[ingest]'"
+_MSG = "Parser deps not installed. Run: pip install 'accurag[ingest]'"
 
 
 def _block(monkeypatch, prefix: str) -> None:

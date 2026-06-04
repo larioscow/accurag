@@ -1,4 +1,4 @@
-"""Tests for accurag.embed — hermetic, no API keys, no network."""
+"""Tests for accurag.embed. Hermetic, with no API keys or network."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from typing import Any
 
 
 def _make_fake_embedding(index: int, dim: int = 4) -> list[float]:
-    """Deterministic vector for text at position *index*."""
+    """Vector for the text at the given index."""
     return [float(index)] * dim
 
 
@@ -25,7 +25,7 @@ class _FakeEmbeddingsResponse:
 
 
 class _FakeEmbeddingsResource:
-    """Records every call; returns deterministic vectors keyed by *position*."""
+    """Records every call; returns vectors keyed by position."""
 
     def __init__(self) -> None:
         self.calls: list[dict[str, Any]] = []
@@ -66,7 +66,7 @@ def test_embed_texts_order_preserved():
     texts = [f"doc_{i}" for i in range(7)]
     result = embed_texts(texts, client=client)
 
-    # Each fake vector is [index]*dim — position 0 → [0.0, …], position 3 → [3.0, …]
+    # Each fake vector is [index]*dim, so position 0 → [0.0, …], position 3 → [3.0, …]
     for i, vec in enumerate(result):
         assert vec == _make_fake_embedding(i), f"vector at position {i} was out of order: {vec}"
 
@@ -161,8 +161,8 @@ def test_local_embedding_client_is_exported():
 
 
 def test_make_client_is_callable():
-    """make_client() must be importable and callable (lazy import — no API key needed
-    when the function signature is inspected; we only verify it returns something)."""
+    """make_client() must be importable and callable (lazy import, so no API key is
+    needed when the function signature is inspected; we only verify it returns something)."""
     import inspect
 
     from accurag import embed
