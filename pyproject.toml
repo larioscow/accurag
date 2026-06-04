@@ -1,0 +1,98 @@
+[project]
+name = "accurag"
+version = "0.1.0"
+description = "An evaluation-driven RAG library: ingest / retrieve / ask / evaluate over a dense | hybrid | hybrid_rerank switch, with deterministic Python-assigned source provenance."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "larioscow" }]
+keywords = [
+    "rag",
+    "retrieval-augmented-generation",
+    "hybrid-search",
+    "reranking",
+    "qdrant",
+    "evaluation",
+    "llm",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Indexing",
+]
+dependencies = [
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "openai>=1.40",
+    "anthropic>=0.40",
+    "cohere>=5.0",
+    "fastembed>=0.4",
+    "qdrant-client>=1.12",
+    "httpx>=0.27",
+]
+
+[project.urls]
+Homepage = "https://github.com/larioscow/accurag"
+Repository = "https://github.com/larioscow/accurag"
+Documentation = "https://larioscow.github.io/accurag/"
+
+[project.scripts]
+accurag = "accurag.cli:main"
+
+[project.optional-dependencies]
+ingest = ["docling>=2.0", "pymupdf>=1.24", "tiktoken>=0.7"]
+dev = ["pytest>=8.0", "ruff>=0.15", "mypy>=1.13"]
+eval = ["ragas>=0.2"]
+obs = ["langfuse>=2.0"]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
+    "mkdocs-gen-files>=0.5",
+    "mkdocs-literate-nav>=0.6",
+    "black>=24.0",  # mkdocstrings imports it to format API-reference signatures (ruff is a binary, not importable)
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# Curated set matching the noqa codes already in the tree (PLC0415, BLE001,
+# A002, N801, PLW0603, …) plus import-sorting, pyupgrade and bugbear.
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "BLE", "SIM", "PL", "RUF"]
+ignore = [
+    "E501",     # line length — the formatter handles code width; don't nag on strings/comments
+    "PLC0415",  # import-outside-top-level — lazy imports are this project's architecture
+    #             (keeps `import accurag` key-free; heavy/optional SDKs load on demand)
+    "RUF022",   # unsorted __all__ — the public surface is curated (RagPipeline first), not alphabetical
+    "PLR0913",  # too many arguments (pipeline/build functions legitimately take several)
+    "PLR2004",  # magic value in comparison
+    "PLR0911",  # too many return statements
+    "PLR0912",  # too many branches
+    "PLR0915",  # too many statements
+    "PLW2901",  # loop variable overwritten (used intentionally in batching)
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests use in-function fakes, private access and toy values by design;
+# fakes mirror SDK signatures verbatim (e.g. an `input=` arg shadowing a builtin).
+"tests/**" = ["N801", "PLC0415", "PLR2004", "SIM", "A002"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src/accurag"]
+ignore_missing_imports = true   # the provider SDKs (openai, anthropic, cohere, qdrant, docling) ship no stubs
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true

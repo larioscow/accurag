@@ -1,0 +1,26 @@
+# secrets & local env
+.env
+.venv/
+
+# corpus / index artifacts (large, regenerable)
+data/raw/
+data/*.jsonl
+data/qdrant/
+
+# python caches & build artifacts
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+dist/
+build/
+
+# macOS junk & local tooling config
+.DS_Store
+.claude/
+CLAUDE.md
+
+# mkdocs build output
+site/
