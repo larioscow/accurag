@@ -4,8 +4,6 @@
 [![docs](https://github.com/larioscow/accurag/actions/workflows/docs.yml/badge.svg)](https://larioscow.github.io/accurag/)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
 
-[Documentation site](https://larioscow.github.io/accurag/): guides, architecture, and an auto-generated API reference.
-
 accurag is a retrieval-augmented generation library you import or run from the CLI. Point
 it at a corpus and it fetches, parses, chunks, embeds, and indexes the documents, then
 answers questions over them with grounded, source-attributed responses.
