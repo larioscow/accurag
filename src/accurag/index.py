@@ -1,4 +1,5 @@
-"""Qdrant index helpers: create collection and upsert chunks.
+"""Qdrant index helpers: create the collection, upsert chunks, and delete a
+document's chunks.
 
 Design notes
 ------------
@@ -207,3 +208,26 @@ def index_chunks(
             points=points,
             wait=True,
         )
+
+
+def delete_doc(client: QdrantClient, doc_id: int, collection: str | None = None) -> int:
+    """Delete every point belonging to *doc_id*; return the number removed.
+
+    Selects by the ``doc_id`` payload field written by :func:`index_chunks`, so
+    it removes all of a document's chunks regardless of how many there are. This
+    is the building block for updating or dropping a document.
+    """
+    from qdrant_client import models  # lazy import
+
+    col = collection if collection is not None else settings.collection
+    flt = models.Filter(
+        must=[models.FieldCondition(key="doc_id", match=models.MatchValue(value=doc_id))]
+    )
+    removed = client.count(collection_name=col, count_filter=flt, exact=True).count
+    if removed:
+        client.delete(
+            collection_name=col,
+            points_selector=models.FilterSelector(filter=flt),
+            wait=True,
+        )
+    return removed

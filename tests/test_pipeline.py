@@ -397,3 +397,95 @@ def test_per_instance_api_keys_thread_to_clients():
     assert rag2.llm._api_key == "key-B"
     assert rag.llm._api_key == "key-A"
     assert global_settings.anthropic_api_key not in ("key-A", "key-B")
+
+
+# ---------------------------------------------------------------------------
+# delete_document / reindex_document
+# ---------------------------------------------------------------------------
+
+
+def test_delete_document_removes_its_chunks():
+    from accurag.config import settings
+
+    pipe = _pipeline()  # seeded client holds doc 1: "1-0", "1-1"
+    assert pipe.qdrant.count(collection_name=settings.collection, exact=True).count == 2
+    removed = pipe.delete_document(1)
+    assert removed == 2
+    assert pipe.qdrant.count(collection_name=settings.collection, exact=True).count == 0
+
+
+def test_reindex_document_replaces_and_drops_stale_chunks(monkeypatch, tmp_path):
+    from accurag import fetch as fetch_mod
+    from accurag import index
+    from accurag.config import settings
+    from accurag.models import ManifestEntry
+
+    client = QdrantClient(":memory:")
+    index.build_collection(client, dim=_DIM, with_sparse=True, collection=settings.collection)
+    old = [_chunk("1-0", 1), _chunk("1-1", 1), _chunk("1-2", 1)]
+    index.index_chunks(
+        client,
+        old,
+        [_vec_for(c.chunk_id) for c in old],
+        [([_axis_for(c.chunk_id)], [1.0]) for c in old],
+        collection=settings.collection,
+    )
+    assert client.count(collection_name=settings.collection, exact=True).count == 3
+
+    pipe = RagPipeline(
+        embed_client=_FakeEmbedClient(),
+        sparse_model=_FakeSparseModel(),
+        qdrant_client=client,
+    )
+    entry = ManifestEntry(
+        id=1,
+        title="T",
+        authors="a",
+        year=2020,
+        pdf_url="http://x",
+        source="vendor",
+        theme="rag",
+        has_tables_or_figures=False,
+        verified=True,
+    )
+    monkeypatch.setattr(fetch_mod, "load_manifest", lambda _p: [entry])
+    monkeypatch.setattr(fetch_mod, "fetch_all", lambda _entries, _raw: [tmp_path / "1.pdf"])
+    # the updated document now parses to a single chunk
+    monkeypatch.setattr(
+        RagPipeline,
+        "_chunks_for_entry",
+        lambda self, e, path, parser, budget, vision: [_chunk("1-0", 1)],
+    )
+
+    n = pipe.reindex_document(1, manifest_path=tmp_path / "manifest.json")
+    assert n == 1
+    # the two stale chunks (1-1, 1-2) are dropped; only the new 1-0 remains
+    assert client.count(collection_name=settings.collection, exact=True).count == 1
+
+
+def test_reindex_document_unknown_id_raises(monkeypatch, tmp_path):
+    from accurag import fetch as fetch_mod
+
+    monkeypatch.setattr(fetch_mod, "load_manifest", lambda _p: [])
+    pipe = _pipeline()
+    with pytest.raises(ValueError, match="no manifest entry"):
+        pipe.reindex_document(7, manifest_path=tmp_path / "m.json")
+
+
+def test_ask_emits_step_timings_to_callback():
+    pipe = _pipeline()
+    steps: list[tuple[str, float, str | None]] = []
+    pipe.ask(
+        "text for 1-0",
+        strategy="hybrid_rerank",
+        k=2,
+        on_step=lambda step, ms, tid: steps.append((step, ms, tid)),
+        trace_id="abc",
+    )
+    names = [s[0] for s in steps]
+    assert "embed" in names
+    assert "retrieve" in names
+    assert "rerank" in names
+    assert "generate" in names
+    assert all(isinstance(ms, float) and ms >= 0 for _, ms, _ in steps)
+    assert all(tid == "abc" for *_, tid in steps)

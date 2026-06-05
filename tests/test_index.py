@@ -3,7 +3,7 @@
 import pytest
 from qdrant_client import QdrantClient
 
-from accurag.index import build_collection, index_chunks
+from accurag.index import build_collection, delete_doc, index_chunks
 from accurag.models import Chunk
 
 # ---------------------------------------------------------------------------
@@ -151,3 +151,29 @@ def test_index_chunks_dense_only_two_chunks_then_one_more():
     from accurag.config import settings
 
     assert client.count(collection_name=settings.collection, exact=True).count == 3
+
+
+# ---------------------------------------------------------------------------
+# delete_doc
+# ---------------------------------------------------------------------------
+
+
+def test_delete_doc_removes_only_that_doc():
+    client = QdrantClient(":memory:")
+    build_collection(client, dim=DIM, with_sparse=False)
+    chunks = [_make_chunk("1-0", 1), _make_chunk("1-1", 1), _make_chunk("2-0", 2)]
+    index_chunks(client, chunks, [_vec(0.1), _vec(0.2), _vec(0.3)])
+
+    from accurag.config import settings
+
+    removed = delete_doc(client, 1)
+    assert removed == 2
+    assert client.count(collection_name=settings.collection, exact=True).count == 1
+
+
+def test_delete_doc_absent_returns_zero():
+    client = QdrantClient(":memory:")
+    build_collection(client, dim=DIM, with_sparse=False)
+    index_chunks(client, [_make_chunk("1-0", 1)], [_vec(0.1)])
+
+    assert delete_doc(client, 99) == 0
