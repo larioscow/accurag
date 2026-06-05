@@ -11,16 +11,6 @@ on:
       - .github/workflows/docs.yml
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-# Allow one concurrent deployment; don't cancel an in-progress production deploy.
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 env:
   DISABLE_MKDOCS_2_WARNING: "true"
 
@@ -32,20 +22,7 @@ jobs:
       - uses: astral-sh/setup-uv@v5
         with:
           python-version: "3.12"
-      # docs extra builds the site; the package itself is needed so mkdocstrings
-      # can import accurag and render the API reference from its docstrings.
       - run: uv sync --extra docs
-      - run: uv run mkdocs build --strict --site-dir site
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      # --strict fails the build on a broken link or a missing nav/reference,
+      # so this doubles as a docs check on every push.
+      - run: uv run mkdocs build --strict

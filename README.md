@@ -1,7 +1,6 @@
 # accurag
 
 [![CI](https://github.com/larioscow/accurag/actions/workflows/ci.yml/badge.svg)](https://github.com/larioscow/accurag/actions/workflows/ci.yml)
-[![docs](https://github.com/larioscow/accurag/actions/workflows/docs.yml/badge.svg)](https://larioscow.github.io/accurag/)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
 
 accurag is a retrieval-augmented generation library you import or run from the CLI. Point
